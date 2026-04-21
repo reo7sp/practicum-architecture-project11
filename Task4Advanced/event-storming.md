@@ -1,61 +1,72 @@
 # Event Storming
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph Patients
-        E1["Зарегистрирован новый пациент"]
-        E2["Обновлены данные пациента"]
+        direction TB
+        PA["Actor: оператор клиники"] --> PC["Command: зарегистрировать пациента"]
+        PC --> PG["Aggregate: Patient"]
+        PG --> PE["Event: PatientRegistered"]
+        PE --> PR["Read model: карточка пациента"]
     end
 
     subgraph Scheduling
-        E3["Создана запись на приём"]
-        E4["Приём подтверждён"]
-        E5["Приём отменён"]
+        direction TB
+        SA["Actor: оператор клиники"] --> SC["Command: создать запись на приём"]
+        SC --> SG["Aggregate: Appointment"]
+        SG --> SE["Event: AppointmentCreated"]
+        SE --> SR["Read model: расписание врача"]
     end
 
     subgraph Diagnostics
-        E6["Назначено исследование"]
-        E7["Исследование выполнено"]
-        E8["Результат исследования сохранён"]
+        direction TB
+        DA["Actor: врач"] --> DC["Command: назначить исследование"]
+        DC --> DG["Aggregate: DiagnosticOrder"]
+        DG --> DE["Event: DiagnosticOrderCreated"]
+        DE --> DR["Read model: журнал назначений"]
     end
 
     subgraph AI Inference
-        E9["Исследование отправлено в ИИ"]
-        E10["Получено заключение ИИ"]
+        direction TB
+        AA["Actor: медицинский сервис"] --> AC["Command: отправить исследование в ИИ"]
+        AC --> AG["Aggregate: AiJob"]
+        AG --> AE["Event: AiAnalysisRequested"]
+        AE --> AR["Read model: очередь AI-задач"]
     end
 
     subgraph Billing
-        E11["Счёт выставлен"]
-        E12["Оплата получена"]
+        direction TB
+        BA["Actor: биллинговый сервис"] --> BC["Command: выставить счёт"]
+        BC --> BG["Aggregate: Invoice"]
+        BG --> BE["Event: InvoiceIssued"]
+        BE --> BR["Read model: реестр счетов"]
     end
 
     subgraph Credit
-        E13["Подана заявка на кредит"]
-        E14["Кредит одобрен"]
-        E15["Создан кредитный договор"]
-        E16["Платёж по кредиту получен"]
+        direction TB
+        CA["Actor: клиент / оператор"] --> CC["Command: подать заявку на кредит"]
+        CC --> CG["Aggregate: LoanApplication"]
+        CG --> CE["Event: LoanApplicationSubmitted"]
+        CE --> CR["Read model: реестр кредитных заявок"]
     end
 
     subgraph Inventory
-        E17["Списан расходный материал"]
-        E18["Создан заказ на поставку"]
+        direction TB
+        IA["Actor: медицинский сервис"] --> IC["Command: списать расходный материал"]
+        IC --> IG["Aggregate: StockItem"]
+        IG --> IE["Event: StockWrittenOff"]
+        IE --> IR["Read model: остатки склада"]
     end
+```
 
-    E1 --> E3
-    E3 --> E4
-    E4 --> E6
-    E6 --> E7
-    E7 --> E8
-    E8 --> E9
-    E9 --> E10
-    E4 --> E11
-    E11 --> E12
-    E13 --> E14
-    E14 --> E15
-    E15 --> E16
-    E7 --> E17
-    E17 --> E18
-    E11 -.-> E13
-    E12 -.-> E13
-    E8 -.-> E13
+## Связи между контекстами
+
+```mermaid
+flowchart LR
+    Patients["Patients"] --> Scheduling["Scheduling"]
+    Scheduling --> Diagnostics["Diagnostics"]
+    Diagnostics --> AiInference["AI Inference"]
+    Scheduling --> Billing["Billing"]
+    Billing --> Credit["Credit"]
+    Diagnostics --> Inventory["Inventory"]
 ```
