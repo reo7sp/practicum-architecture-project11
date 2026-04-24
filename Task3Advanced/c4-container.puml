@@ -1,0 +1,73 @@
+@startuml
+!include <C4/C4_Container.puml>
+
+Person(business_user, "Аналитик", "Работает с витринами и отчётами")
+Person(operator, "Оператор клиники", "Работает с операционными системами")
+
+System_Boundary(future20, "Future 2.0") {
+  Container(portal, "Self-Service Data Portal", "Web", "Доступ к витринам и метрикам")
+  Container(data_catalog, "Data Catalog", "DataHub", "Поиск данных, lineage и владельцы")
+  Container(iam, "Identity and Access Platform", "IAM", "SSO и роли")
+
+  System_Boundary(medical_domain, "Medical Domain") {
+    Container(medical_services, "Medical Services", "Services", "Пациентский поток и клиники")
+    ContainerDb(medical_secure_store, "Secure Medical Store", "Protected DB", "Медицинские карты и результаты исследований")
+  }
+
+  System_Boundary(fintech_domain, "Fintech Domain") {
+    Container(fintech_services, "Fintech Services", "Services", "Счета, кредиты, платежи")
+  }
+
+  System_Boundary(partner_domain, "AI and Partner Domains") {
+    Container(ai_services, "AI Services", "ML service", "AI inference и модели")
+    Container(pharma_integration, "Pharma Integration", "API", "Интеграция фарма-партнёров")
+    Container(device_integration, "Device Integration", "MQTT", "Интеграция оборудования")
+  }
+
+  System_Boundary(data_platform, "Data and Event Platform") {
+    Container(event_bus, "Event Bus", "Kafka", "Доменные события")
+    Container(data_pipelines, "Data Pipelines", "Airflow", "Обработка и загрузка данных")
+    Container(lakehouse_catalog, "Lakehouse Catalog", "Nessie", "Каталог таблиц и версий")
+    ContainerDb(data_products, "Доменные витрины", "Iceberg + S3", "Подготовленные данные для аналитики")
+  }
+
+  System_Boundary(legacy_layer, "Legacy Layer") {
+    Container(legacy_dwh, "Legacy DWH", "SQL Server 2008", "Исторические данные и legacy логика")
+    Container(legacy_camel, "Legacy Camel", "Apache Camel", "Старая интеграционная шина")
+    Container(legacy_bi, "Legacy BI", "Power BI", "Старые отчёты")
+    Container(legacy_ui, "Legacy Operator UI", "PowerBuilder", "Интерфейс операторов")
+  }
+
+  System_Boundary(legacy_bridge, "Legacy Bridge Layer") {
+    Container(legacy_bridge_service, "Legacy Bridge", "Adapter", "Переходный слой для legacy")
+  }
+}
+
+Rel(business_user, portal, "использует")
+Rel(business_user, data_catalog, "ищет данные")
+Rel(operator, medical_services, "работает")
+
+Rel(portal, iam, "проверка доступа")
+Rel(portal, data_products, "читает витрины")
+Rel(portal, data_catalog, "ищет витрины")
+Rel(data_catalog, data_products, "читает метаданные")
+
+Rel(medical_services, event_bus, "публикует события")
+Rel(medical_services, medical_secure_store, "работает с медданными")
+Rel(fintech_services, event_bus, "публикует события")
+Rel(ai_services, event_bus, "использует события")
+Rel(ai_services, medical_secure_store, "использует защищённые данные")
+Rel(pharma_integration, event_bus, "публикует события")
+Rel(device_integration, event_bus, "публикует события")
+
+Rel(event_bus, data_pipelines, "передаёт события")
+Rel(data_pipelines, lakehouse_catalog, "пишет метаданные")
+Rel(data_pipelines, data_products, "формирует витрины")
+Rel(lakehouse_catalog, data_products, "управляет таблицами")
+
+Rel(legacy_dwh, legacy_bridge_service, "источник")
+Rel(legacy_camel, legacy_bridge_service, "источник")
+Rel(legacy_bridge_service, event_bus, "bridge")
+Rel(legacy_ui, legacy_dwh, "работает через DWH")
+Rel(legacy_bi, legacy_dwh, "строит отчёты")
+@enduml

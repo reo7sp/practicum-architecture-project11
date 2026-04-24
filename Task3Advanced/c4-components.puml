@@ -1,0 +1,35 @@
+@startuml
+!include <C4/C4_Component.puml>
+
+Container(event_bus, "Event Bus", "Kafka", "Доменные события")
+Container(lakehouse_catalog, "Lakehouse Catalog", "Nessie", "Каталог таблиц и версий")
+ContainerDb(data_products, "Доменные витрины", "Iceberg + S3", "Подготовленные данные для аналитики")
+Container(data_catalog, "Data Catalog", "DataHub", "Поиск данных и lineage")
+Container(legacy_bridge, "Legacy Bridge", "Adapter", "Переходный слой для legacy")
+Container(partner_sources, "Partner Sources", "API / MQTT", "Новые внешние источники")
+
+Container_Boundary(platform, "Data Pipelines") {
+  Component(event_ingestion, "Event Ingestion", "Kafka consumer", "Приём событий")
+  Component(source_ingestion, "Source Ingestion", "Connectors", "Приём данных из новых источников")
+  Component(orchestration, "Orchestration", "Airflow", "Запуск пайплайнов и задач")
+  Component(transformations, "Transformations", "Airflow jobs", "Преобразование данных")
+  Component(data_quality, "Data Quality Checks", "Checks", "Проверка качества данных")
+  Component(storage_writer, "Storage Writer", "Iceberg writer", "Запись витрин в хранилище")
+  Component(catalog_update, "Catalog Update", "Nessie client", "Обновление каталога таблиц")
+  Component(metadata_publish, "Metadata Publish", "DataHub client", "Обновление метаданных и lineage")
+}
+
+Rel(legacy_bridge, event_ingestion, "bridge")
+Rel(event_bus, event_ingestion, "события")
+Rel(partner_sources, source_ingestion, "данные")
+Rel(event_ingestion, orchestration, "события")
+Rel(source_ingestion, orchestration, "данные")
+Rel(orchestration, transformations, "запускает")
+Rel(transformations, data_quality, "готовит данные")
+Rel(data_quality, storage_writer, "проверенные данные")
+Rel(storage_writer, data_products, "пишет данные")
+Rel(storage_writer, catalog_update, "новые таблицы и версии")
+Rel(catalog_update, lakehouse_catalog, "обновляет каталог")
+Rel(storage_writer, metadata_publish, "данные о публикации")
+Rel(metadata_publish, data_catalog, "обновляет метаданные")
+@enduml
